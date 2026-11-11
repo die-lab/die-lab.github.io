@@ -1,0 +1,88 @@
+cv:
+  name: Diego Carli
+  label: Research fellow in evolutionary genomics
+  location: Piacenza, Italy
+  image: ""
+  summary: I study how the nuclear and mitochondrial genomes interact, focusing on small RNAs of mitochondrial origin (smithRNAs), and develop bioinformatic pipelines for small RNA-seq.
+
+  social_networks:
+    - network: GitHub
+      username: die-lab
+
+  sections:
+    Experience:
+      - company: Università Cattolica del Sacro Cuore, DiSTAS
+        position: Research fellow
+        location: Piacenza, Italy
+        start_date: 2026
+        end_date: present
+        summary: Facoltà di Scienze Agrarie, Alimentari e Ambientali.
+
+      - company: University of Montreal
+        position: Visiting intern (host Prof. Sophie Breton)
+        location: Montreal, Canada
+        start_date: 2025-04
+        end_date: 2025-07
+        highlights:
+          - Mytilus edulis germline cell culture to study mitochondrial small RNAs in sex determination.
+
+    Education:
+      - institution: University of Bologna
+        area: Nuclear-mitochondrial cross-talk and small RNAs
+        studyType: PhD
+        location: Bologna, Italy
+        start_date: 2022
+        end_date: 2026
+        highlights:
+          - Cross-talk between the nuclear and mitochondrial genomes and microRNA-based silencing.
+          - A pipeline for small RNA libraries of mitochondrial origin.
+          - Connections with sex development in bivalves.
+          - Distribution of smithRNAs across Metazoa and their possible origin in Wolbachia.
+
+      - institution: University of Bologna
+        area: Biodiversity and Evolution
+        studyType: MSc
+        location: Bologna, Italy
+        start_date: 2019
+        end_date: 2022
+        score: 110/110 cum laude
+        highlights:
+          - "Thesis: Assessing smithRNAs distribution across Metazoans: a bioinformatical approach."
+
+      - institution: University of Udine
+        area: Natural Science
+        studyType: BSc
+        location: Udine, Italy
+        start_date: 2016
+        end_date: 2019
+        score: 107/110
+
+    Publications:
+      - title: "SmithRNAs: a common feature among Metazoa"
+        authors:
+          - G. Marturano
+          - Diego Carli
+          - C. Cucini
+          - E. Cardaioli
+          - A. Carapelli
+          - F. Plazzi
+          - F. Frati
+          - M. Passamonti
+          - F. Nardi
+        publisher: Genome Biology and Evolution
+        releaseDate: 2025
+        url: https://doi.org/10.1093/gbe/evaf208
+
+      - title: "SmithHunter: a workflow for the identification of candidate smithRNAs and their targets"
+        authors:
+          - G. Marturano
+          - Diego Carli
+          - C. Cucini
+          - A. Carapelli
+          - F. Plazzi
+          - F. Frati
+          - M. Passamonti
+          - F. Nardi
+        publisher: BMC Bioinformatics
+        releaseDate: 2024
+        url: https://doi.org/10.1186/s12859-024-05909-0

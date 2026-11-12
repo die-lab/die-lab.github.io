@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - main
+      - al-folio # temporary: build the preview from this branch
     paths:
       - "assets/**"
       - "**.bib"

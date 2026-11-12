@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo – indice progetti con transizione al click</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Playfair+Display:ital,wght@1,600&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+      /* ============ BASE ============ */
+      :root {
+        --bg: #0c0c0c;
+        --fg: #ece8dc;
+        --muted: #7d7a72;
+        --accent: #f2e04a;
+        --pw: min(40vw, 520px); /* larghezza anteprima centrale */
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: Inter, system-ui, sans-serif;
+      }
+      body {
+        overflow-x: hidden;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: 0;
+        cursor: pointer;
+      }
+
+      /* ============ HEADER ============ */
+      header {
+        position: fixed;
+        inset: 0 0 auto 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px 24px;
+        z-index: 20;
+        font:
+          700 12px/1 "Space Mono",
+          monospace;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        mix-blend-mode: difference;
+      }
+      #sound {
+        border: 1px solid currentColor;
+        padding: 6px 10px;
+        border-radius: 99px;
+      }
+
+      /* ============ ANTEPRIMA FISSA AL CENTRO ============ */
+      .preview {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        width: var(--pw);
+        aspect-ratio: 4/3;
+        transform: translate(-50%, -50%);
+        overflow: hidden;
+        z-index: 1;
+        pointer-events: none;
+        background: #222;
+      }
+      .preview img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      /* ============ INDICE ============ */
+      .list {
+        position: relative;
+        z-index: 2;
+        padding: calc(50vh - 32px) 24px;
+      } /* padding = il primo/ultimo elemento può arrivare al centro */
+      .row {
+        display: grid;
+        grid-template-columns: 1fr var(--pw) 1fr;
+        align-items: center;
+        height: 64px;
+        cursor: pointer;
+        color: var(--muted);
+        transition: color 0.25s;
+      }
+      .row .left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        justify-content: flex-end;
+        padding-right: 24px;
+      }
+      .row .num {
+        font:
+          400 11px "Space Mono",
+          monospace;
+      }
+      .row .thumb {
+        width: 54px;
+        height: 38px;
+        object-fit: cover;
+        opacity: 0.35;
+        filter: grayscale(1);
+        transition:
+          opacity 0.25s,
+          filter 0.25s;
+      }
+      .row .name {
+        padding-left: 24px;
+        font: 800 clamp(16px, 2.2vw, 28px)/1 Inter;
+        text-transform: uppercase;
+        letter-spacing: -0.01em;
+        transform-origin: left center;
+        transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .row.active {
+        color: var(--fg);
+      }
+      .row.active .thumb {
+        opacity: 1;
+        filter: none;
+      }
+      .row.active .name {
+        transform: scale(1.35);
+      }
+
+      /* ============ OVERLAY DI TRANSIZIONE / PAGINA PROGETTO ============ */
+      .stage {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        pointer-events: none;
+        visibility: hidden;
+      }
+      .stage.open {
+        pointer-events: auto;
+      }
+      .wipe {
+        position: absolute;
+        inset: 0;
+        background: var(--accent);
+        clip-path: inset(100% 0 0 0);
+      }
+      .hero {
+        position: absolute;
+        left: 50%;
+        top: 42%;
+        width: 180px;
+        height: 135px;
+        overflow: hidden;
+      }
+      .hero img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .title {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(42% + 90px);
+        text-align: center;
+        color: #111;
+        font: 800 clamp(28px, 5vw, 64px)/1 Inter;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .title span {
+        display: inline-block;
+        min-width: 0.25em;
+      }
+      .title .f1 {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-weight: 600;
+        text-transform: none;
+      }
+      .title .f2 {
+        font-family: "Space Mono", monospace;
+        font-weight: 700;
+      }
+      .info {
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        color: #fff;
+        font: 400 13px/1.5 Inter;
+        opacity: 0;
+        gap: 24px;
+      }
+      .info p {
+        max-width: 420px;
+      }
+      #back {
+        border: 1px solid #fff;
+        padding: 10px 16px;
+        border-radius: 99px;
+        font:
+          700 12px "Space Mono",
+          monospace;
+        text-transform: uppercase;
+      }
+
+      /* cursore personalizzato (solo dispositivi con mouse) */
+      .cursor {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        z-index: 50;
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+        mix-blend-mode: difference;
+      }
+      @media (hover: none) {
+        .cursor {
+          display: none;
+        }
+      }
+
+      @media (max-width: 700px) {
+        :root {
+          --pw: 62vw;
+        }
+        .row {
+          grid-template-columns: 1fr;
+          height: 56px;
+          position: relative;
+        }
+        .row .left {
+          position: absolute;
+          left: 0;
+          padding: 0;
+        }
+        .row .thumb {
+          display: none;
+        }
+        .row .name {
+          padding-left: 40px;
+        }
+        .row.active .name {
+          transform: scale(1.15);
+        }
+        .preview {
+          opacity: 0.35;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span>Studio Demo ®</span>
+      <button id="sound" aria-pressed="true">Suono: on</button>
+    </header>
+
+    <div class="preview"><img id="previewImg" alt="" /></div>
+    <main class="list" id="list"></main>
+
+    <section class="stage" id="stage" aria-hidden="true">
+      <div class="wipe"></div>
+      <div class="hero"><img id="heroImg" alt="" /></div>
+      <h1 class="title" id="title"></h1>
+      <div class="info">
+        <p id="desc"></p>
+        <button id="back">← Indietro</button>
+      </div>
+    </section>
+
+    <div class="cursor" id="cursor"></div>
+
+    <script>
+      /* =========================================================
+   1) DATI – sostituisci con i tuoi progetti e le tue immagini
+   ========================================================= */
+      const projects = [
+        { name: "Laguna Nera", year: "2026", c: ["#1b2a3a", "#e2563b"] },
+        { name: "Officina Sud", year: "2026", c: ["#2c2c2c", "#f0b429"] },
+        { name: "Mare d'Inverno", year: "2025", c: ["#0f3d4a", "#9ad0d6"] },
+        { name: "Fumo Rosso", year: "2025", c: ["#3a0b0b", "#ff3b2f"] },
+        { name: "Carta Bianca", year: "2025", c: ["#d8d2c4", "#5a5244"] },
+        { name: "Notte al Molo", year: "2024", c: ["#0b0b1f", "#6b5bff"] },
+        { name: "Verde Bora", year: "2024", c: ["#14301c", "#c6e36b"] },
+        { name: "Sale e Ferro", year: "2024", c: ["#3b3f44", "#e9e4da"] },
+        { name: "Ultimo Faro", year: "2023", c: ["#1f1309", "#ffb066"] },
+      ];
+
+      /* Immagini finte generate al volo (su un sito vero userai <img src="foto.jpg">) */
+      function fakeImage([a, b], seed) {
+        const cv = document.createElement("canvas");
+        cv.width = 800;
+        cv.height = 600;
+        const x = cv.getContext("2d");
+        let s = seed * 9301 + 49297;
+        const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+        const g = x.createLinearGradient(0, 0, 800, 600);
+        g.addColorStop(0, a);
+        g.addColorStop(1, b);
+        x.fillStyle = g;
+        x.fillRect(0, 0, 800, 600);
+        for (let i = 0; i < 6; i++) {
+          x.globalAlpha = 0.25 + r() * 0.35;
+          x.fillStyle = i % 2 ? a : b;
+          x.beginPath();
+          x.arc(r() * 800, r() * 600, 60 + r() * 220, 0, 7);
+          x.filter = "blur(30px)";
+          x.fill();
+        }
+        x.filter = "none";
+        x.globalAlpha = 0.08;
+        for (let i = 0; i < 9000; i++) {
+          x.fillStyle = r() > 0.5 ? "#fff" : "#000";
+          x.fillRect(r() * 800, r() * 600, 1.5, 1.5);
+        }
+        return cv.toDataURL("image/jpeg", 0.85);
+      }
+      projects.forEach((p, i) => (p.img = fakeImage(p.c, i + 3)));
+
+      /* =========================================================
+   2) SUONO – sintetizzato con Web Audio, nessun file da caricare
+   ========================================================= */
+      let audio = null,
+        soundOn = true;
+      function ctx() {
+        if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+        if (audio.state === "suspended") audio.resume();
+        return audio;
+      }
+      function tick() {
+        // piccolo "tic" quando cambia l'elemento attivo
+        if (!soundOn || !audio) return;
+        const a = audio,
+          o = a.createOscillator(),
+          g = a.createGain();
+        o.frequency.value = 2400;
+        o.type = "sine";
+        g.gain.setValueAtTime(0.04, a.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.04);
+        o.connect(g).connect(a.destination);
+        o.start();
+        o.stop(a.currentTime + 0.05);
+      }
+      function whoosh(up = true) {
+        // "swoosh" + colpo al click
+        if (!soundOn) return;
+        const a = ctx(),
+          t = a.currentTime;
+        const len = a.sampleRate * 0.6,
+          buf = a.createBuffer(1, len, a.sampleRate),
+          d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+        const n = a.createBufferSource();
+        n.buffer = buf;
+        const f = a.createBiquadFilter();
+        f.type = "bandpass";
+        f.Q.value = 1.2;
+        f.frequency.setValueAtTime(up ? 400 : 2500, t);
+        f.frequency.exponentialRampToValueAtTime(up ? 2500 : 400, t + 0.5);
+        const g = a.createGain();
+        g.gain.value = 0.25;
+        n.connect(f).connect(g).connect(a.destination);
+        n.start(t);
+        const o = a.createOscillator(),
+          og = a.createGain();
+        o.type = "triangle";
+        o.frequency.setValueAtTime(up ? 180 : 120, t);
+        o.frequency.exponentialRampToValueAtTime(50, t + 0.25);
+        og.gain.setValueAtTime(0.35, t);
+        og.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        o.connect(og).connect(a.destination);
+        o.start(t);
+        o.stop(t + 0.3);
+      }
+      document.getElementById("sound").onclick = (e) => {
+        soundOn = !soundOn;
+        e.currentTarget.textContent = "Suono: " + (soundOn ? "on" : "off");
+        e.currentTarget.setAttribute("aria-pressed", soundOn);
+        if (soundOn) ctx();
+      };
+      window.addEventListener("pointerdown", () => soundOn && ctx(), { once: true }); // i browser sbloccano l'audio solo dopo un gesto
+
+      /* =========================================================
+   3) INDICE + ANTEPRIMA CENTRALE
+   ========================================================= */
+      const list = document.getElementById("list"),
+        previewImg = document.getElementById("previewImg");
+      projects.forEach((p, i) => {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.dataset.i = i;
+        row.innerHTML = `<div class="left"><span class="num">${String(i + 1).padStart(2, "0")} · ${p.year}</span><img class="thumb" src="${p.img}" alt=""></div>
+                 <div></div><div class="name">${p.name}</div>`;
+        row.addEventListener("mouseenter", () => setActive(i));
+        row.addEventListener("click", () => openProject(i));
+        list.appendChild(row);
+      });
+      const rows = [...document.querySelectorAll(".row")];
+      let active = -1;
+      function setActive(i) {
+        if (i === active) return;
+        active = i;
+        rows.forEach((r, k) => r.classList.toggle("active", k === i));
+        previewImg.src = projects[i].img;
+        gsap.fromTo(previewImg, { scale: 1.15 }, { scale: 1, duration: 0.6, ease: "expo.out" }); // leggero "zoom out" a ogni cambio
+        tick();
+      }
+      /* Con lo scroll diventa attivo l'elemento più vicino al centro dello schermo (funziona anche su telefono) */
+      function onScroll() {
+        const mid = innerHeight / 2;
+        let best = 0,
+          bd = 1e9;
+        rows.forEach((r, k) => {
+          const b = r.getBoundingClientRect(),
+            d = Math.abs(b.top + b.height / 2 - mid);
+          if (d < bd) {
+            bd = d;
+            best = k;
+          }
+        });
+        setActive(best);
+      }
+      addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+
+      /* =========================================================
+   4) TITOLO CHE "SCRAMBLA" CAMBIANDO FONT LETTERA PER LETTERA
+   ========================================================= */
+      const titleEl = document.getElementById("title");
+      const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZÖÅØ#&*";
+      function scramble(text, duration = 900) {
+        titleEl.innerHTML = [...text].map((ch) => `<span>${ch === " " ? "&nbsp;" : ch}</span>`).join("");
+        const spans = [...titleEl.children],
+          start = performance.now();
+        return new Promise((res) => {
+          (function frame(now) {
+            const t = (now - start) / duration;
+            spans.forEach((s, k) => {
+              const ch = text[k];
+              if (ch === " ") return;
+              const settle = (k / spans.length) * 0.6 + 0.4; // le lettere si fermano una dopo l'altra
+              if (t >= settle) {
+                s.textContent = ch;
+                s.className = "";
+              } else {
+                s.textContent = GLYPHS[(Math.random() * GLYPHS.length) | 0];
+                s.className = ["f1", "f2", ""][(Math.random() * 3) | 0];
+              }
+            });
+            t < 1 ? requestAnimationFrame(frame) : res();
+          })(start);
+        });
+      }
+
+      /* =========================================================
+   5) TRANSIZIONE AL CLICK (timeline GSAP)
+   ========================================================= */
+      const stage = document.getElementById("stage"),
+        wipe = stage.querySelector(".wipe"),
+        hero = stage.querySelector(".hero"),
+        heroImg = document.getElementById("heroImg"),
+        info = stage.querySelector(".info"),
+        desc = document.getElementById("desc");
+      const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let busy = false;
+
+      async function openProject(i) {
+        if (busy) return;
+        busy = true;
+        setActive(i);
+        const p = projects[i];
+        heroImg.src = p.img;
+        desc.textContent = `${p.name} — ${p.year}. Qui andrebbe la descrizione del progetto: testo, crediti, gallery. Su GitHub Pages può essere un'altra pagina HTML o una sezione della stessa.`;
+        stage.classList.add("open");
+        stage.setAttribute("aria-hidden", "false");
+        gsap.set(stage, { visibility: "visible" });
+        gsap.set(hero, { width: 180, height: 135, top: "42%", xPercent: -50, yPercent: -50, x: 0, y: 0, scale: 0.6, opacity: 0 });
+        gsap.set(titleEl, { opacity: 1, color: "#111", top: innerHeight * 0.42 + 90, scale: 1 });
+        gsap.set(info, { opacity: 0, y: 20 });
+        whoosh(true);
+
+        const d = reduce ? 0.01 : 1;
+        // a) il pannello giallo sale dal basso
+        await gsap.to(wipe, { clipPath: "inset(0% 0 0 0)", duration: 0.55 * d, ease: "expo.inOut" });
+        // b) compare la miniatura + il titolo scrambla
+        gsap.to(hero, { scale: 1, opacity: 1, duration: 0.5 * d, ease: "back.out(1.6)" });
+        await scramble(p.name.toUpperCase(), reduce ? 10 : 850);
+        // c) l'immagine si espande a tutto schermo, il titolo scende e diventa bianco
+        const tl = gsap.timeline({ defaults: { ease: "expo.inOut", duration: 1 * d } });
+        tl.to(hero, { width: innerWidth, height: innerHeight, top: "50%" })
+          .to(titleEl, { top: innerHeight * 0.62, color: "#fff", scale: 1.6 }, "<")
+          .to(info, { opacity: 1, y: 0, duration: 0.6 * d, ease: "power3.out" }, "-=.3");
+        await tl;
+        busy = false;
+      }
+
+      async function closeProject() {
+        if (busy) return;
+        busy = true;
+        whoosh(false);
+        const d = reduce ? 0.01 : 1;
+        await gsap
+          .timeline({ defaults: { ease: "expo.inOut", duration: 0.8 * d } })
+          .to(info, { opacity: 0, duration: 0.25 * d })
+          .to(hero, { width: 180, height: 135, top: "42%", opacity: 0 })
+          .to(titleEl, { opacity: 0, duration: 0.3 * d }, "<")
+          .to(wipe, { clipPath: "inset(0 0 100% 0)", duration: 0.55 * d }, "-=.3");
+        gsap.set(wipe, { clipPath: "inset(100% 0 0 0)" });
+        gsap.set(stage, { visibility: "hidden" });
+        stage.classList.remove("open");
+        stage.setAttribute("aria-hidden", "true");
+        busy = false;
+      }
+      document.getElementById("back").onclick = closeProject;
+      addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && stage.classList.contains("open")) closeProject();
+      });
+
+      /* =========================================================
+   6) CURSORE CHE INSEGUE IL MOUSE (con un po' di ritardo)
+   ========================================================= */
+      const cur = document.getElementById("cursor");
+      const qx = gsap.quickTo(cur, "x", { duration: 0.35, ease: "power3" }),
+        qy = gsap.quickTo(cur, "y", { duration: 0.35, ease: "power3" });
+      addEventListener("pointermove", (e) => {
+        qx(e.clientX);
+        qy(e.clientY);
+      });
+      list.addEventListener("pointerenter", () => gsap.to(cur, { scale: 3, duration: 0.3 }));
+      list.addEventListener("pointerleave", () => gsap.to(cur, { scale: 1, duration: 0.3 }));
+    </script>
+  </body>
+</html>

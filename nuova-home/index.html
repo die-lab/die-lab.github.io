@@ -282,18 +282,25 @@
         background: var(--accent);
         clip-path: inset(100% 0 0 0);
       }
+      /* l'immagine è sempre a tutto schermo: si anima solo il "ritaglio" (clip-path),
+         così non cambia dimensione a ogni frame e non tremola */
       .hero {
         position: absolute;
-        left: 50%;
-        top: 40%;
-        width: 180px;
-        height: 135px;
+        inset: 0;
         overflow: hidden;
+        will-change: clip-path;
       }
       .hero img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+      }
+      body.locked {
+        overflow: hidden;
+      }
+      .stage {
+        touch-action: none;
+        overscroll-behavior: contain;
       }
       .hero::after {
         content: "";
@@ -782,6 +789,11 @@
         el.innerHTML = [...text].map((ch) => `<span>${ch === " " ? "&nbsp;" : ch}</span>`).join("");
         const spans = [...el.children],
           start = performance.now();
+        /* ogni lettera tiene la larghezza della lettera finale: la riga non "balla" */
+        spans.forEach((s) => {
+          s.style.width = s.getBoundingClientRect().width + "px";
+          s.style.textAlign = "center";
+        });
         return new Promise((res) => {
           (function frame(now) {
             const t = (now - start) / duration;
@@ -810,7 +822,8 @@
         previewCap = document.getElementById("previewCap");
       let items = [],
         rows = [],
-        active = -1;
+        active = -1,
+        lastScroll = 0;
 
       function build(projects) {
         const software = projects.map((p, i) => ({
@@ -845,7 +858,9 @@
             row.tabIndex = 0;
             row.setAttribute("role", "button");
             row.innerHTML = `<div class="left"><span class="num">${String(i + 1).padStart(2, "0")}</span><img class="thumb" src="${it.src}" alt=""></div><div></div><div class="name">${it.name}</div>`;
-            row.addEventListener("mouseenter", () => setActive(i));
+            row.addEventListener("mouseenter", () => {
+              if (performance.now() - lastScroll > 250) setActive(i);
+            });
             row.addEventListener("click", () => openItem(i));
             row.addEventListener("keydown", (e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -859,6 +874,13 @@
           });
         });
         onScroll();
+        /* link diretto a una scheda, es. /nuova-home/#wolbachia */
+        const h = location.hash.slice(1);
+        const k = items.findIndex((it) => slug(it) === h);
+        if (k >= 0) {
+          history.replaceState(null, "", location.pathname);
+          openItem(k);
+        }
       }
 
       function setActive(i) {
@@ -867,7 +889,7 @@
         rows.forEach((r, k) => r.classList.toggle("active", k === i));
         previewImg.src = items[i].src;
         previewCap.textContent = items[i].kind;
-        if (!reduce) gsap.fromTo(previewImg, { scale: 1.15 }, { scale: 1, duration: 0.6, ease: "expo.out" });
+        if (!reduce) gsap.fromTo(previewImg, { scale: 1.08 }, { scale: 1, duration: 0.5, ease: "expo.out", overwrite: true });
         tick();
       }
 
@@ -875,7 +897,8 @@
       const preview = document.querySelector(".preview");
       let previewShown = false;
       function onScroll() {
-        if (!rows.length) return;
+        if (!rows.length || stage.classList.contains("open")) return;
+        lastScroll = performance.now();
         const mid = innerHeight / 2;
         let best = 0,
           bd = 1e9;
@@ -922,9 +945,37 @@
         return Math.min(max, (innerWidth - 48) / w);
       }
 
-      async function openItem(i) {
+      /* ritaglio piccolo al centro (miniatura) e ritaglio pieno (tutto schermo) */
+      function smallClip(scale = 1) {
+        const w = 180 * scale,
+          h = 135 * scale,
+          cy = innerHeight * 0.4;
+        const t = cy - h / 2,
+          b = innerHeight - (cy + h / 2),
+          lr = (innerWidth - w) / 2;
+        return `inset(${t}px ${lr}px ${b}px ${lr}px)`;
+      }
+      const FULL = "inset(0px 0px 0px 0px)";
+      const slug = (it) =>
+        it.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "");
+
+      /* il tasto "indietro" del browser/telefono chiude la scheda invece di uscire dalla pagina */
+      function openItem(i) {
+        if (busy || stage.classList.contains("open")) return;
+        history.pushState({ item: i }, "", "#" + slug(items[i]));
+        showItem(i);
+      }
+      addEventListener("popstate", () => {
+        if (stage.classList.contains("open")) closeItem();
+      });
+
+      async function showItem(i) {
         if (busy) return;
         busy = true;
+        document.body.classList.add("locked");
         lastFocus = document.activeElement;
         setActive(i);
         const it = items[i];
@@ -939,17 +990,17 @@
         stage.classList.add("open");
         stage.setAttribute("aria-hidden", "false");
         gsap.set(stage, { visibility: "visible" });
-        gsap.set(hero, { width: 180, height: 135, top: "40%", xPercent: -50, yPercent: -50, scale: 0.6, opacity: 0 });
+        gsap.set(hero, { clipPath: smallClip(0.6), opacity: 0 });
         gsap.set(titleEl, { opacity: 1, color: "#111", top: innerHeight * 0.4 + 90, scale: 1 });
         gsap.set(detail, { opacity: 0, y: 20 });
         whoosh(true);
         const d = reduce ? 0.01 : 1;
         await gsap.to(wipe, { clipPath: "inset(0% 0 0 0)", duration: 0.55 * d, ease: "expo.inOut" });
-        gsap.to(hero, { scale: 1, opacity: 1, duration: 0.5 * d, ease: "back.out(1.6)" });
+        gsap.to(hero, { clipPath: smallClip(1), opacity: 1, duration: 0.5 * d, ease: "back.out(1.6)" });
         await scramble(titleEl, it.name.toUpperCase(), reduce ? 10 : 800);
         await gsap
           .timeline({ defaults: { ease: "expo.inOut", duration: 1 * d } })
-          .to(hero, { width: innerWidth, height: innerHeight, top: "50%" })
+          .to(hero, { clipPath: FULL })
           .to(titleEl, { top: innerHeight * 0.38, color: "#fff", scale: fitScale(1.4) }, "<")
           .to(detail, { opacity: 1, y: 0, duration: 0.6 * d, ease: "power3.out" }, "-=.3");
         go.focus();
@@ -957,26 +1008,36 @@
       }
 
       async function closeItem() {
-        if (busy) return;
+        while (busy) await new Promise((r) => setTimeout(r, 50));
+        if (!stage.classList.contains("open")) return;
         busy = true;
         whoosh(false);
         const d = reduce ? 0.01 : 1;
         await gsap
           .timeline({ defaults: { ease: "expo.inOut", duration: 0.8 * d } })
           .to(detail, { opacity: 0, duration: 0.25 * d })
-          .to(hero, { width: 180, height: 135, top: "40%", opacity: 0 })
+          .to(hero, { clipPath: smallClip(0.6), opacity: 0 })
           .to(titleEl, { opacity: 0, duration: 0.3 * d }, "<")
           .to(wipe, { clipPath: "inset(0 0 100% 0)", duration: 0.55 * d }, "-=.3");
         gsap.set(wipe, { clipPath: "inset(100% 0 0 0)" });
         gsap.set(stage, { visibility: "hidden" });
         stage.classList.remove("open");
         stage.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("locked");
         if (lastFocus) lastFocus.focus({ preventScroll: true });
         busy = false;
       }
-      document.getElementById("back").onclick = closeItem;
+      /* "Back" ed Esc tornano indietro nella cronologia: così cronologia e scheda restano allineate */
+      function goBack() {
+        if (history.state && history.state.item !== undefined) history.back();
+        else {
+          history.replaceState(null, "", location.pathname);
+          closeItem();
+        }
+      }
+      document.getElementById("back").onclick = goBack;
       addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && stage.classList.contains("open")) closeItem();
+        if (e.key === "Escape" && stage.classList.contains("open")) goBack();
       });
 
       /* =====================================================

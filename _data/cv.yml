@@ -21,8 +21,8 @@ cv:
       - company: University of Montreal
         position: Visiting intern (host Prof. Sophie Breton)
         location: Montreal, Canada
-        start_date: 2025-04
-        end_date: 2025-07
+        date: 2025
+        summary: April to July 2025.
         highlights:
           - Mytilus edulis germline cell culture to study mitochondrial small RNAs in sex determination.
 

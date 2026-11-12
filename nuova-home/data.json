@@ -1,0 +1,6 @@
+---
+layout: null
+permalink: /nuova-home/data.json
+sitemap: false
+---
+{% assign ps = site.projects | sort: "importance" %}{"projects": [{% for p in ps %}{"title": {{ p.title | jsonify }}, "description": {{ p.description | jsonify }}, "url": {{ p.url | relative_url | jsonify }}, "category": {{ p.category | jsonify }}, "img": {% if p.img %}{{ p.img | relative_url | jsonify }}{% else %}null{% endif %}}{% unless forloop.last %}, {% endunless %}{% endfor %}]}

@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+
+Sitemap: https://die-lab.github.io/sitemap.xml

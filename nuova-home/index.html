@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Diego Carli — evolutionary genomics (preview)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Playfair+Display:ital,wght@1,600&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+      /* ===== Prototipo della nuova home: NON sostituisce la home attuale ===== */
+      :root {
+        --bg: #0f1412;
+        --fg: #ece8dc;
+        --muted: #6f756f;
+        --accent: #ff7a45;
+        --pw: min(36vw, 480px);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: Inter, system-ui, sans-serif;
+      }
+      body {
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: 0;
+        cursor: pointer;
+      }
+
+      header {
+        position: fixed;
+        inset: 0 0 auto 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 24px;
+        z-index: 20;
+        font:
+          700 11px/1 "Space Mono",
+          monospace;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        mix-blend-mode: difference;
+      }
+      header nav {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      header a {
+        text-decoration: none;
+      }
+      header a:hover {
+        text-decoration: underline;
+      }
+      #sound {
+        border: 1px solid currentColor;
+        padding: 6px 10px;
+        border-radius: 99px;
+      }
+
+      /* ===== Intro ===== */
+      .intro {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 24px;
+        position: relative;
+      }
+      .intro h1 {
+        font: 800 clamp(48px, 13vw, 200px) / 0.85 Inter;
+        letter-spacing: -0.04em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .intro h1 span {
+        display: inline-block;
+      }
+      .intro p {
+        max-width: 560px;
+        margin-top: 28px;
+        font-size: clamp(16px, 1.6vw, 20px);
+        line-height: 1.45;
+        color: #c9c5b9;
+      }
+      .intro p em {
+        font-family: "Playfair Display", serif;
+        color: var(--accent);
+      }
+      .intro .meta {
+        margin-top: 18px;
+        font:
+          400 12px "Space Mono",
+          monospace;
+        color: var(--muted);
+      }
+      .scroll-hint {
+        position: absolute;
+        bottom: 24px;
+        left: 24px;
+        font:
+          400 11px "Space Mono",
+          monospace;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .f1 {
+        font-family: "Playfair Display", serif !important;
+        font-style: italic;
+        font-weight: 600 !important;
+        text-transform: none;
+      }
+      .f2 {
+        font-family: "Space Mono", monospace !important;
+        font-weight: 700 !important;
+      }
+
+      /* ===== Anteprima centrale ===== */
+      .preview {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        width: var(--pw);
+        aspect-ratio: 4/3;
+        transform: translate(-50%, -50%);
+        overflow: hidden;
+        z-index: 1;
+        pointer-events: none;
+        opacity: 0;
+        background: #1b201d;
+      }
+      .preview img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .preview .cap {
+        position: absolute;
+        left: 10px;
+        bottom: 8px;
+        font:
+          400 10px "Space Mono",
+          monospace;
+        color: #fff;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        mix-blend-mode: difference;
+      }
+
+      /* ===== Indice ===== */
+      .list {
+        position: relative;
+        z-index: 2;
+        padding: calc(50vh - 30px) 24px;
+      }
+      .group {
+        display: grid;
+        grid-template-columns: 1fr var(--pw) 1fr;
+        height: 46px;
+        align-items: end;
+        font:
+          700 10px "Space Mono",
+          monospace;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .group span {
+        grid-column: 3;
+        padding-left: 24px;
+        padding-bottom: 10px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr var(--pw) 1fr;
+        align-items: center;
+        height: 60px;
+        cursor: pointer;
+        color: var(--muted);
+        transition: color 0.25s;
+      }
+      .row .left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        justify-content: flex-end;
+        padding-right: 24px;
+      }
+      .row .num {
+        font:
+          400 11px "Space Mono",
+          monospace;
+        text-align: right;
+      }
+      .row .thumb {
+        width: 52px;
+        height: 36px;
+        object-fit: cover;
+        opacity: 0.3;
+        filter: grayscale(1);
+        transition:
+          opacity 0.25s,
+          filter 0.25s;
+      }
+      .row .name {
+        padding-left: 24px;
+        font: 800 clamp(15px, 2vw, 26px) / 1 Inter;
+        text-transform: uppercase;
+        letter-spacing: -0.01em;
+        transform-origin: left center;
+        transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .row.active {
+        color: var(--fg);
+      }
+      .row.active .thumb {
+        opacity: 1;
+        filter: none;
+      }
+      .row.active .name {
+        transform: scale(1.3);
+      }
+      .row:focus-visible {
+        outline: 1px dashed var(--accent);
+        outline-offset: 4px;
+      }
+
+      footer {
+        position: relative;
+        z-index: 2;
+        padding: 0 24px 40px;
+        font:
+          400 11px "Space Mono",
+          monospace;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      /* ===== Transizione / dettaglio ===== */
+      .stage {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        pointer-events: none;
+        visibility: hidden;
+      }
+      .stage.open {
+        pointer-events: auto;
+      }
+      .wipe {
+        position: absolute;
+        inset: 0;
+        background: var(--accent);
+        clip-path: inset(100% 0 0 0);
+      }
+      .hero {
+        position: absolute;
+        left: 50%;
+        top: 40%;
+        width: 180px;
+        height: 135px;
+        overflow: hidden;
+      }
+      .hero img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.65));
+      }
+      .title {
+        position: absolute;
+        left: 0;
+        right: 0;
+        text-align: center;
+        color: #111;
+        font: 800 clamp(22px, 5.5vw, 76px) / 1 Inter;
+        text-transform: uppercase;
+        white-space: nowrap;
+        letter-spacing: -0.02em;
+      }
+      .title span {
+        display: inline-block;
+        min-width: 0.25em;
+      }
+      .detail {
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        bottom: 28px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: end;
+        gap: 24px;
+        color: #fff;
+        opacity: 0;
+      }
+      .detail .kicker {
+        font:
+          700 11px "Space Mono",
+          monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--accent);
+        margin-bottom: 10px;
+      }
+      .detail p {
+        max-width: 560px;
+        font-size: 15px;
+        line-height: 1.55;
+      }
+      .detail .btns {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .btn {
+        border: 1px solid #fff;
+        padding: 10px 16px;
+        border-radius: 99px;
+        font:
+          700 11px "Space Mono",
+          monospace;
+        text-transform: uppercase;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .btn.primary {
+        background: #fff;
+        color: #111;
+      }
+
+      .cursor {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        z-index: 50;
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+        mix-blend-mode: difference;
+      }
+      @media (hover: none) {
+        .cursor {
+          display: none;
+        }
+      }
+
+      @media (max-width: 700px) {
+        :root {
+          --pw: 64vw;
+        }
+        header nav a.opt {
+          display: none;
+        }
+        .group,
+        .row {
+          grid-template-columns: 1fr;
+          position: relative;
+        }
+        .group span {
+          grid-column: 1;
+          padding-left: 40px;
+        }
+        .row {
+          height: 54px;
+        }
+        .row .left {
+          position: absolute;
+          left: 0;
+          padding: 0;
+        }
+        .row .thumb {
+          display: none;
+        }
+        .row .name {
+          padding-left: 40px;
+        }
+        .row.active .name {
+          transform: scale(1.12);
+        }
+        .preview {
+          filter: brightness(0.45);
+        }
+        .detail {
+          grid-template-columns: 1fr;
+        }
+        .detail .btns {
+          justify-content: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span>Diego Carli</span>
+      <nav>
+        <a class="opt" href="/publications/">Publications</a>
+        <a class="opt" href="/cv/">CV</a>
+        <a href="/">Classic site</a>
+        <button id="sound" aria-pressed="false">Sound: off</button>
+      </nav>
+    </header>
+
+    <section class="intro">
+      <h1 id="name">Diego Carli</h1>
+      <p>
+        I study how the nuclear and mitochondrial genomes talk to each other — and the small RNAs of mitochondrial origin they use, the
+        <em>smithRNAs</em>.
+      </p>
+      <div class="meta">Research fellow in evolutionary genomics · Università Cattolica del Sacro Cuore, Piacenza</div>
+      <div class="scroll-hint">↓ Scroll to explore</div>
+    </section>
+
+    <div class="preview"><img id="previewImg" alt="" /><span class="cap" id="previewCap"></span></div>
+    <main class="list" id="list"></main>
+
+    <footer>
+      <span>Prototype — the current homepage is unchanged.</span>
+      <a href="https://github.com/die-lab">github.com/die-lab</a>
+    </footer>
+
+    <section class="stage" id="stage" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="title">
+      <div class="wipe"></div>
+      <div class="hero"><img id="heroImg" alt="" /></div>
+      <h2 class="title" id="title"></h2>
+      <div class="detail">
+        <div>
+          <div class="kicker" id="kicker"></div>
+          <p id="desc"></p>
+        </div>
+        <div class="btns">
+          <button class="btn" id="back">← Back</button>
+          <a class="btn primary" id="go" href="#">Open →</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="cursor" id="cursor"></div>
+
+    <script>
+      /* =====================================================
+         1) CONTENUTI
+         I progetti arrivano da data.json, che Jekyll genera
+         leggendo la cartella _projects/: aggiungi un progetto
+         lì e compare qui da solo. Il resto è scritto a mano.
+         ===================================================== */
+      const research = [
+        {
+          name: "smithRNAs",
+          kind: "Research line",
+          pattern: "genome",
+          c: ["#10201b", "#ff7a45"],
+          desc: "Small RNAs of mitochondrial origin: how to find them in sequencing data, how widespread they are across animals, and what they may regulate.",
+          url: "/publications/",
+          go: "Publications",
+        },
+        {
+          name: "Mitochondria & sex",
+          kind: "Research line",
+          pattern: "shell",
+          c: ["#2b2118", "#e8c48a"],
+          desc: "The role of mitochondria in sex determination in bivalves, studied through small RNA-seq and evolutionary genomics.",
+          url: "/",
+          go: "About",
+        },
+        {
+          name: "Wolbachia",
+          kind: "Research line",
+          pattern: "rods",
+          c: ["#1a1430", "#c0a3ff"],
+          desc: "A possible bacterial origin of these regulatory elements in the endosymbiont Wolbachia.",
+          url: "/",
+          go: "About",
+        },
+      ];
+      const fallbackProjects = [
+        {
+          title: "SmithHunter2",
+          description: "Find small RNA loci on every genome in a sample",
+          url: "/projects/1_smithhunter2/",
+          category: "software",
+        },
+        {
+          title: "SmithHunter",
+          description: "A workflow to identify candidate smithRNAs and their targets",
+          url: "/projects/2_smithhunter/",
+          category: "software",
+        },
+      ];
+      const papers = [
+        {
+          name: "SmithRNAs in Metazoa",
+          kind: "Genome Biology and Evolution · 2025",
+          pattern: "paper",
+          c: ["#13222a", "#7fd1c7"],
+          desc: "Marturano G, Carli D, et al. SmithRNAs: a common feature among Metazoa. Genome Biology and Evolution 17(11).",
+          url: "https://doi.org/10.1093/gbe/evaf208",
+          go: "DOI",
+        },
+        {
+          name: "SmithHunter paper",
+          kind: "BMC Bioinformatics · 2024",
+          pattern: "paper",
+          c: ["#221a12", "#ffb35c"],
+          desc: "Marturano G, Carli D, et al. SmithHunter: a workflow for the identification of candidate smithRNAs and their targets. BMC Bioinformatics 25: 286.",
+          url: "https://doi.org/10.1186/s12859-024-05909-0",
+          go: "DOI",
+        },
+      ];
+      const more = [
+        {
+          name: "Curriculum",
+          kind: "CV",
+          pattern: "timeline",
+          c: ["#191919", "#ece8dc"],
+          desc: "Education, positions, publications and skills.",
+          url: "/cv/",
+          go: "CV",
+        },
+        {
+          name: "Repositories",
+          kind: "Code",
+          pattern: "reads",
+          c: ["#0d1a12", "#6be38f"],
+          desc: "Pipelines and tools on GitHub.",
+          url: "/repositories/",
+          go: "Repositories",
+        },
+      ];
+      const softwareColors = [
+        ["#0c1a22", "#4fc3ff"],
+        ["#1f1410", "#ff5c3a"],
+        ["#151a0c", "#d6f25a"],
+        ["#1a0f1f", "#ff6bd6"],
+      ];
+
+      /* =====================================================
+         2) IMMAGINI PROVVISORIE (generate, a tema biologia)
+         Per usare foto vere: aggiungi img: "/assets/img/xxx.jpg"
+         a una voce e verrà usata al posto del disegno.
+         ===================================================== */
+      function makeImage(pattern, [a, b], seed) {
+        const W = 800,
+          H = 600,
+          cv = document.createElement("canvas");
+        cv.width = W;
+        cv.height = H;
+        const x = cv.getContext("2d");
+        let s = seed * 7919 + 13;
+        const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+        const g = x.createRadialGradient(W * 0.3, H * 0.3, 50, W / 2, H / 2, W * 0.75);
+        g.addColorStop(0, a);
+        g.addColorStop(1, "#050706");
+        x.fillStyle = g;
+        x.fillRect(0, 0, W, H);
+        x.strokeStyle = b;
+        x.fillStyle = b;
+        if (pattern === "genome") {
+          /* genoma mitocondriale circolare con "geni" e piccoli RNA */
+          const cx = W / 2,
+            cy = H / 2;
+          for (let k = 0; k < 4; k++) {
+            x.globalAlpha = 0.25 + k * 0.2;
+            x.lineWidth = 2 + k * 5;
+            let ang = 0;
+            while (ang < Math.PI * 2) {
+              const len = 0.15 + r() * 0.5;
+              if (r() > 0.35) {
+                x.beginPath();
+                x.arc(cx, cy, 120 + k * 40, ang, ang + len);
+                x.stroke();
+              }
+              ang += len + 0.05;
+            }
+          }
+          x.globalAlpha = 0.9;
+          for (let i = 0; i < 70; i++) {
+            const t = r() * Math.PI * 2,
+              rr = 290 + r() * 60;
+            x.fillRect(cx + Math.cos(t) * rr, cy + Math.sin(t) * rr, 10 + r() * 14, 3);
+          }
+        } else if (pattern === "shell") {
+          /* linee di accrescimento di una valva */
+          x.lineWidth = 2;
+          for (let k = 0; k < 34; k++) {
+            x.globalAlpha = 0.15 + (k % 4 === 0 ? 0.5 : 0.2);
+            x.beginPath();
+            x.ellipse(W / 2, H * 0.95, 30 + k * 11, 20 + k * 13, 0, Math.PI, 2 * Math.PI);
+            x.stroke();
+          }
+          x.globalAlpha = 0.2;
+          for (let k = -12; k <= 12; k++) {
+            x.beginPath();
+            x.moveTo(W / 2, H * 0.95);
+            x.lineTo(W / 2 + k * 40, H * 0.95 - 470);
+            x.stroke();
+          }
+        } else if (pattern === "rods") {
+          /* batteri a bastoncino dentro una cellula */
+          x.globalAlpha = 0.25;
+          x.lineWidth = 3;
+          x.beginPath();
+          x.ellipse(W / 2, H / 2, 330, 240, 0.2, 0, 7);
+          x.stroke();
+          x.globalAlpha = 0.85;
+          x.lineCap = "round";
+          for (let i = 0; i < 46; i++) {
+            const t = r() * 7,
+              d = Math.sqrt(r()),
+              px = W / 2 + Math.cos(t) * 300 * d,
+              py = H / 2 + Math.sin(t) * 210 * d,
+              an = r() * 7;
+            x.lineWidth = 10 + r() * 6;
+            x.beginPath();
+            x.moveTo(px, py);
+            x.lineTo(px + Math.cos(an) * 26, py + Math.sin(an) * 26);
+            x.stroke();
+          }
+        } else if (pattern === "reads") {
+          /* "pileup" di letture allineate su un genoma */
+          for (let row = 0; row < 40; row++) {
+            let px = -r() * 80;
+            while (px < W) {
+              const len = 40 + r() * 90;
+              x.globalAlpha = r() > 0.9 ? 1 : 0.18 + (row % 3) * 0.08;
+              x.fillRect(px, 40 + row * 13, len, 7);
+              px += len + 6 + r() * 30;
+            }
+          }
+        } else if (pattern === "paper") {
+          /* pagina di articolo stilizzata */
+          x.globalAlpha = 0.9;
+          x.fillRect(110, 80, 420, 22);
+          x.globalAlpha = 0.5;
+          x.fillRect(110, 116, 300, 10);
+          for (let c = 0; c < 2; c++)
+            for (let l = 0; l < 26; l++) {
+              x.globalAlpha = 0.18;
+              x.fillRect(110 + c * 300, 160 + l * 15, 260 - (l % 7 === 6 ? 120 : r() * 20), 6);
+            }
+          x.globalAlpha = 0.7;
+          x.lineWidth = 3;
+          x.beginPath();
+          x.moveTo(430, 400);
+          for (let i = 0; i < 20; i++) x.lineTo(430 + i * 12, 400 - Math.log(1 + i) * 40 - r() * 20);
+          x.stroke();
+        } else if (pattern === "timeline") {
+          x.globalAlpha = 0.5;
+          x.lineWidth = 2;
+          x.beginPath();
+          x.moveTo(120, H / 2);
+          x.lineTo(W - 80, H / 2);
+          x.stroke();
+          for (let i = 0; i < 9; i++) {
+            const px = 140 + i * 66;
+            x.globalAlpha = 0.9;
+            x.beginPath();
+            x.arc(px, H / 2, 6 + (i % 3) * 3, 0, 7);
+            x.fill();
+            x.globalAlpha = 0.25;
+            x.fillRect(px - 20, H / 2 + (i % 2 ? 30 : -60), 70 + r() * 40, 8);
+          }
+        } else {
+          /* software: struttura a moduli tipo pipeline */
+          x.lineWidth = 2;
+          const cols = 5,
+            rows = 4;
+          for (let i = 0; i < cols; i++)
+            for (let j = 0; j < rows; j++) {
+              if (r() > 0.72) continue;
+              const px = 90 + i * 130,
+                py = 90 + j * 115;
+              x.globalAlpha = r() > 0.8 ? 0.9 : 0.3;
+              x.strokeRect(px, py, 90, 60);
+              x.globalAlpha = 0.25;
+              x.beginPath();
+              x.moveTo(px + 90, py + 30);
+              x.lineTo(px + 130, py + 30 + (r() - 0.5) * 115);
+              x.stroke();
+            }
+        }
+        x.globalAlpha = 0.07;
+        for (let i = 0; i < 7000; i++) {
+          x.fillStyle = r() > 0.5 ? "#fff" : "#000";
+          x.fillRect(r() * W, r() * H, 1.5, 1.5);
+        }
+        return cv.toDataURL("image/jpeg", 0.85);
+      }
+
+      /* =====================================================
+         3) SUONO (spento di default)
+         ===================================================== */
+      let audio = null,
+        soundOn = false;
+      function ac() {
+        if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+        if (audio.state === "suspended") audio.resume();
+        return audio;
+      }
+      function tick() {
+        if (!soundOn || !audio) return;
+        const a = audio,
+          o = a.createOscillator(),
+          g = a.createGain();
+        o.frequency.value = 2200;
+        g.gain.setValueAtTime(0.035, a.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.04);
+        o.connect(g).connect(a.destination);
+        o.start();
+        o.stop(a.currentTime + 0.05);
+      }
+      function whoosh(up) {
+        if (!soundOn) return;
+        const a = ac(),
+          t = a.currentTime,
+          len = a.sampleRate * 0.6;
+        const buf = a.createBuffer(1, len, a.sampleRate),
+          d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+        const n = a.createBufferSource(),
+          f = a.createBiquadFilter(),
+          g = a.createGain();
+        n.buffer = buf;
+        f.type = "bandpass";
+        f.Q.value = 1.2;
+        f.frequency.setValueAtTime(up ? 400 : 2500, t);
+        f.frequency.exponentialRampToValueAtTime(up ? 2500 : 400, t + 0.5);
+        g.gain.value = 0.22;
+        n.connect(f).connect(g).connect(a.destination);
+        n.start(t);
+      }
+      document.getElementById("sound").onclick = (e) => {
+        soundOn = !soundOn;
+        e.currentTarget.textContent = "Sound: " + (soundOn ? "on" : "off");
+        e.currentTarget.setAttribute("aria-pressed", soundOn);
+        if (soundOn) ac();
+      };
+
+      /* =====================================================
+         4) SCRAMBLE DEL TESTO
+         ===================================================== */
+      const GLYPHS = "ACGUTNRYÖØ#*";
+      function scramble(el, text, duration) {
+        el.innerHTML = [...text].map((ch) => `<span>${ch === " " ? "&nbsp;" : ch}</span>`).join("");
+        const spans = [...el.children],
+          start = performance.now();
+        return new Promise((res) => {
+          (function frame(now) {
+            const t = (now - start) / duration;
+            spans.forEach((s, k) => {
+              const ch = text[k];
+              if (ch === " ") return;
+              if (t >= (k / spans.length) * 0.6 + 0.4) {
+                s.textContent = ch;
+                s.className = "";
+              } else {
+                s.textContent = GLYPHS[(Math.random() * GLYPHS.length) | 0];
+                s.className = ["f1", "f2", ""][(Math.random() * 3) | 0];
+              }
+            });
+            t < 1 ? requestAnimationFrame(frame) : res();
+          })(start);
+        });
+      }
+
+      /* =====================================================
+         5) COSTRUZIONE DELL'INDICE
+         ===================================================== */
+      const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const list = document.getElementById("list"),
+        previewImg = document.getElementById("previewImg"),
+        previewCap = document.getElementById("previewCap");
+      let items = [],
+        rows = [],
+        active = -1;
+
+      function build(projects) {
+        const software = projects.map((p, i) => ({
+          name: p.title,
+          kind: "Software",
+          pattern: "pipeline",
+          c: softwareColors[i % softwareColors.length],
+          desc: p.description || "",
+          url: p.url,
+          go: "Project page",
+          img: p.img,
+        }));
+        const groups = [
+          ["Research", research],
+          ["Software", software],
+          ["Papers", papers],
+          ["More", more],
+        ];
+        let n = 0;
+        groups.forEach(([label, arr]) => {
+          if (!arr.length) return;
+          const gEl = document.createElement("div");
+          gEl.className = "group";
+          gEl.innerHTML = `<span>${label}</span>`;
+          list.appendChild(gEl);
+          arr.forEach((it) => {
+            it.src = it.img || makeImage(it.pattern, it.c, n + 2);
+            const i = n++;
+            items.push(it);
+            const row = document.createElement("div");
+            row.className = "row";
+            row.tabIndex = 0;
+            row.setAttribute("role", "button");
+            row.innerHTML = `<div class="left"><span class="num">${String(i + 1).padStart(2, "0")}</span><img class="thumb" src="${it.src}" alt=""></div><div></div><div class="name">${it.name}</div>`;
+            row.addEventListener("mouseenter", () => setActive(i));
+            row.addEventListener("click", () => openItem(i));
+            row.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openItem(i);
+              }
+            });
+            row.addEventListener("focus", () => setActive(i));
+            list.appendChild(row);
+            rows.push(row);
+          });
+        });
+        onScroll();
+      }
+
+      function setActive(i) {
+        if (i === active) return;
+        active = i;
+        rows.forEach((r, k) => r.classList.toggle("active", k === i));
+        previewImg.src = items[i].src;
+        previewCap.textContent = items[i].kind;
+        if (!reduce) gsap.fromTo(previewImg, { scale: 1.15 }, { scale: 1, duration: 0.6, ease: "expo.out" });
+        tick();
+      }
+
+      /* l'anteprima compare solo quando l'indice arriva al centro */
+      const preview = document.querySelector(".preview");
+      let previewShown = false;
+      function onScroll() {
+        if (!rows.length) return;
+        const mid = innerHeight / 2;
+        let best = 0,
+          bd = 1e9;
+        rows.forEach((r, k) => {
+          const b = r.getBoundingClientRect(),
+            d = Math.abs(b.top + b.height / 2 - mid);
+          if (d < bd) {
+            bd = d;
+            best = k;
+          }
+        });
+        const first = rows[0].getBoundingClientRect().top,
+          last = rows[rows.length - 1].getBoundingClientRect().bottom;
+        const show = first < mid + 40 && last > mid - 40;
+        if (show !== previewShown) {
+          previewShown = show;
+          gsap.to(preview, { opacity: show ? 1 : 0, duration: 0.4 });
+        }
+        if (show) setActive(best);
+      }
+      addEventListener("scroll", onScroll, { passive: true });
+
+      fetch("data.json")
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((d) => build(d.projects && d.projects.length ? d.projects : fallbackProjects))
+        .catch(() => build(fallbackProjects));
+
+      /* =====================================================
+         6) TRANSIZIONE AL CLICK
+         ===================================================== */
+      const stage = document.getElementById("stage"),
+        wipe = stage.querySelector(".wipe"),
+        hero = stage.querySelector(".hero"),
+        heroImg = document.getElementById("heroImg"),
+        titleEl = document.getElementById("title"),
+        detail = stage.querySelector(".detail"),
+        go = document.getElementById("go");
+      let busy = false,
+        lastFocus = null;
+
+      /* evita che i titoli lunghi escano dallo schermo sul telefono */
+      function fitScale(max) {
+        const w = [...titleEl.children].reduce((a, sp) => a + sp.offsetWidth, 0) || 1;
+        return Math.min(max, (innerWidth - 48) / w);
+      }
+
+      async function openItem(i) {
+        if (busy) return;
+        busy = true;
+        lastFocus = document.activeElement;
+        setActive(i);
+        const it = items[i];
+        heroImg.src = it.src;
+        document.getElementById("kicker").textContent = it.kind;
+        document.getElementById("desc").textContent = it.desc;
+        go.textContent = (it.go || "Open") + " →";
+        go.href = it.url;
+        const external = /^https?:/.test(it.url);
+        go.target = external ? "_blank" : "";
+        go.rel = external ? "noopener" : "";
+        stage.classList.add("open");
+        stage.setAttribute("aria-hidden", "false");
+        gsap.set(stage, { visibility: "visible" });
+        gsap.set(hero, { width: 180, height: 135, top: "40%", xPercent: -50, yPercent: -50, scale: 0.6, opacity: 0 });
+        gsap.set(titleEl, { opacity: 1, color: "#111", top: innerHeight * 0.4 + 90, scale: 1 });
+        gsap.set(detail, { opacity: 0, y: 20 });
+        whoosh(true);
+        const d = reduce ? 0.01 : 1;
+        await gsap.to(wipe, { clipPath: "inset(0% 0 0 0)", duration: 0.55 * d, ease: "expo.inOut" });
+        gsap.to(hero, { scale: 1, opacity: 1, duration: 0.5 * d, ease: "back.out(1.6)" });
+        await scramble(titleEl, it.name.toUpperCase(), reduce ? 10 : 800);
+        await gsap
+          .timeline({ defaults: { ease: "expo.inOut", duration: 1 * d } })
+          .to(hero, { width: innerWidth, height: innerHeight, top: "50%" })
+          .to(titleEl, { top: innerHeight * 0.38, color: "#fff", scale: fitScale(1.4) }, "<")
+          .to(detail, { opacity: 1, y: 0, duration: 0.6 * d, ease: "power3.out" }, "-=.3");
+        go.focus();
+        busy = false;
+      }
+
+      async function closeItem() {
+        if (busy) return;
+        busy = true;
+        whoosh(false);
+        const d = reduce ? 0.01 : 1;
+        await gsap
+          .timeline({ defaults: { ease: "expo.inOut", duration: 0.8 * d } })
+          .to(detail, { opacity: 0, duration: 0.25 * d })
+          .to(hero, { width: 180, height: 135, top: "40%", opacity: 0 })
+          .to(titleEl, { opacity: 0, duration: 0.3 * d }, "<")
+          .to(wipe, { clipPath: "inset(0 0 100% 0)", duration: 0.55 * d }, "-=.3");
+        gsap.set(wipe, { clipPath: "inset(100% 0 0 0)" });
+        gsap.set(stage, { visibility: "hidden" });
+        stage.classList.remove("open");
+        stage.setAttribute("aria-hidden", "true");
+        if (lastFocus) lastFocus.focus({ preventScroll: true });
+        busy = false;
+      }
+      document.getElementById("back").onclick = closeItem;
+      addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && stage.classList.contains("open")) closeItem();
+      });
+
+      /* =====================================================
+         7) INTRO + CURSORE
+         ===================================================== */
+      if (!reduce) scramble(document.getElementById("name"), "DIEGO CARLI", 1200);
+      const cur = document.getElementById("cursor");
+      const qx = gsap.quickTo(cur, "x", { duration: 0.35, ease: "power3" }),
+        qy = gsap.quickTo(cur, "y", { duration: 0.35, ease: "power3" });
+      addEventListener("pointermove", (e) => {
+        qx(e.clientX);
+        qy(e.clientY);
+      });
+      list.addEventListener("pointerenter", () => gsap.to(cur, { scale: 3, duration: 0.3 }));
+      list.addEventListener("pointerleave", () => gsap.to(cur, { scale: 1, duration: 0.3 }));
+    </script>
+  </body>
+</html>

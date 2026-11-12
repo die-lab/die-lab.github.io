@@ -83,6 +83,7 @@
       /* ===== Intro ===== */
       .intro {
         min-height: 100vh;
+        min-height: 100svh;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -178,6 +179,7 @@
         position: relative;
         z-index: 2;
         padding: calc(50vh - 30px) 24px;
+        padding: calc(50svh - 30px) 24px;
       }
       .group {
         display: grid;
@@ -425,6 +427,9 @@
         }
         .preview {
           filter: brightness(0.45);
+        }
+        .preview .cap {
+          display: none;
         }
         .detail {
           grid-template-columns: 1fr;
@@ -816,6 +821,7 @@
       /* =====================================================
          5) COSTRUZIONE DELL'INDICE
          ===================================================== */
+      if ("scrollRestoration" in history) history.scrollRestoration = "manual";
       const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
       const list = document.getElementById("list"),
         previewImg = document.getElementById("previewImg"),
@@ -968,6 +974,9 @@
         history.pushState({ item: i }, "", "#" + slug(items[i]));
         showItem(i);
       }
+      addEventListener("resize", () => {
+        if (stage.classList.contains("open") && !busy) gsap.set(titleEl, { scale: fitScale(1.4) });
+      });
       addEventListener("popstate", () => {
         if (stage.classList.contains("open")) closeItem();
       });
@@ -991,7 +1000,7 @@
         stage.setAttribute("aria-hidden", "false");
         gsap.set(stage, { visibility: "visible" });
         gsap.set(hero, { clipPath: smallClip(0.6), opacity: 0 });
-        gsap.set(titleEl, { opacity: 1, color: "#111", top: innerHeight * 0.4 + 90, scale: 1 });
+        gsap.set(titleEl, { opacity: 1, color: "#111", top: "40%", y: 90, scale: 1 });
         gsap.set(detail, { opacity: 0, y: 20 });
         whoosh(true);
         const d = reduce ? 0.01 : 1;
@@ -1001,7 +1010,7 @@
         await gsap
           .timeline({ defaults: { ease: "expo.inOut", duration: 1 * d } })
           .to(hero, { clipPath: FULL })
-          .to(titleEl, { top: innerHeight * 0.38, color: "#fff", scale: fitScale(1.4) }, "<")
+          .to(titleEl, { top: "38%", y: 0, color: "#fff", scale: fitScale(1.4) }, "<")
           .to(detail, { opacity: 1, y: 0, duration: 0.6 * d, ease: "power3.out" }, "-=.3");
         go.focus();
         busy = false;
